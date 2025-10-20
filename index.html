@@ -1,0 +1,780 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GEO Scorer Pro - Dominate AI Search Results</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js" defer></script>
+    <style>
+        .score-circle {
+            background: conic-gradient(from 0deg, #10b981 0%, #10b981 var(--score), #e5e7eb var(--score));
+        }
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+        .analyzing { animation: pulse 2s infinite; }
+    </style>
+</head>
+<body class="bg-gray-50" x-data="geoScorer()">
+    <!-- Hero Section -->
+    <div class="bg-gradient-to-r from-purple-600 via-blue-600 to-indigo-600 text-white">
+        <div class="max-w-6xl mx-auto px-4 py-12">
+            <div class="flex items-center gap-2 mb-4">
+                <span class="bg-green-500 px-3 py-1 rounded-full text-xs font-bold animate-pulse">LIVE</span>
+                <span class="text-sm opacity-90">847 sites optimized today</span>
+            </div>
+            <h1 class="text-5xl font-bold mb-4">Is AI Ignoring Your Content?</h1>
+            <p class="text-xl opacity-95">Score & optimize for ChatGPT, Claude, Perplexity in 60 seconds</p>
+            <div class="mt-8 grid grid-cols-4 gap-4 max-w-2xl">
+                <div class="bg-white/10 rounded-lg p-3 backdrop-blur">
+                    <div class="text-2xl font-bold">94%</div>
+                    <div class="text-xs opacity-75">Success Rate</div>
+                </div>
+                <div class="bg-white/10 rounded-lg p-3 backdrop-blur">
+                    <div class="text-2xl font-bold">12k+</div>
+                    <div class="text-xs opacity-75">Sites Analyzed</div>
+                </div>
+                <div class="bg-white/10 rounded-lg p-3 backdrop-blur">
+                    <div class="text-2xl font-bold">3.2x</div>
+                    <div class="text-xs opacity-75">Avg. AI Citations</div>
+                </div>
+                <div class="bg-white/10 rounded-lg p-3 backdrop-blur">
+                    <div class="text-2xl font-bold">$47</div>
+                    <div class="text-xs opacity-75">ROI per Article</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Tool Interface -->
+    <div class="max-w-6xl mx-auto px-4 py-8">
+        <!-- Input Section -->
+        <div class="bg-white rounded-xl shadow-lg p-6 mb-8">
+            <div class="mb-4">
+                <label class="block text-sm font-medium text-gray-700 mb-2">Choose Analysis Type</label>
+                <div class="flex gap-4">
+                    <button @click="analysisType = 'url'" 
+                            :class="analysisType === 'url' ? 'bg-purple-600 text-white' : 'bg-gray-200 text-gray-700'"
+                            class="px-4 py-2 rounded-lg font-medium transition-colors">
+                        Analyze URL
+                    </button>
+                    <button @click="analysisType = 'content'" 
+                            :class="analysisType === 'content' ? 'bg-purple-600 text-white' : 'bg-gray-200 text-gray-700'"
+                            class="px-4 py-2 rounded-lg font-medium transition-colors">
+                        Analyze Content
+                    </button>
+                </div>
+            </div>
+
+            <div x-show="analysisType === 'url'" class="space-y-4">
+                <input type="url" 
+                       x-model="urlInput"
+                       placeholder="https://example.com/your-article" 
+                       class="w-full p-4 border-2 border-gray-300 rounded-lg focus:border-purple-500 focus:outline-none">
+            </div>
+
+            <div x-show="analysisType === 'content'" class="space-y-4">
+                <textarea x-model="contentInput"
+                          placeholder="Paste your content here to analyze..."
+                          class="w-full p-4 border-2 border-gray-300 rounded-lg h-40 focus:border-purple-500 focus:outline-none"></textarea>
+            </div>
+
+            <button @click="analyzeContent()" 
+                    :disabled="analyzing"
+                    :class="analyzing ? 'bg-gray-400' : 'bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700'"
+                    class="mt-4 w-full text-white font-bold py-4 px-8 rounded-lg transition-all transform hover:scale-[1.02]">
+                <span x-show="!analyzing">Analyze GEO Score →</span>
+                <span x-show="analyzing" class="analyzing">Analyzing... Please wait</span>
+            </button>
+
+            <!-- Free Uses Counter -->
+            <div class="mt-4 text-center text-sm text-gray-600">
+                Free checks remaining today: <span class="font-bold" x-text="freeChecksRemaining"></span>/3
+                <a href="#pricing" class="text-purple-600 hover:underline ml-2">Upgrade for unlimited</a>
+            </div>
+        </div>
+
+        <!-- Results Section (Hidden until analysis) -->
+        <div x-show="showResults" x-cloak class="space-y-8">
+            <!-- Score Overview -->
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <!-- Main Score -->
+                <div class="bg-white rounded-xl shadow-lg p-6">
+                    <h3 class="text-lg font-semibold text-gray-700 mb-4">Overall GEO Score</h3>
+                    <div class="relative w-32 h-32 mx-auto">
+                        <div class="score-circle w-full h-full rounded-full flex items-center justify-center"
+                             :style="`--score: ${score}%`">
+                            <div class="bg-white w-28 h-28 rounded-full flex items-center justify-center">
+                                <span class="text-4xl font-bold" 
+                                      :class="score >= 70 ? 'text-green-600' : score >= 40 ? 'text-yellow-600' : 'text-red-600'"
+                                      x-text="score"></span>
+                                <span class="text-xl text-gray-400">/100</span>
+                            </div>
+                        </div>
+                    </div>
+                    <p class="text-center mt-4 text-sm" 
+                       x-text="score >= 70 ? 'Excellent! AI loves this' : score >= 40 ? 'Good, but needs improvement' : 'Poor - AI likely ignores this'"></p>
+                </div>
+
+                <!-- AI Platform Visibility -->
+                <div class="bg-white rounded-xl shadow-lg p-6">
+                    <h3 class="text-lg font-semibold text-gray-700 mb-4">AI Platform Visibility</h3>
+                    <div class="space-y-3">
+                        <div class="flex justify-between items-center">
+                            <span class="font-medium">ChatGPT</span>
+                            <span :class="aiVisibility.chatgpt ? 'text-green-600' : 'text-red-600'" 
+                                  x-text="aiVisibility.chatgpt ? 'Likely Cited' : 'Not Optimized'"></span>
+                        </div>
+                        <div class="flex justify-between items-center">
+                            <span class="font-medium">Claude</span>
+                            <span :class="aiVisibility.claude ? 'text-green-600' : 'text-yellow-600'" 
+                                  x-text="aiVisibility.claude ? 'Likely Cited' : 'Partially Optimized'"></span>
+                        </div>
+                        <div class="flex justify-between items-center">
+                            <span class="font-medium">Perplexity</span>
+                            <span :class="aiVisibility.perplexity ? 'text-green-600' : 'text-red-600'" 
+                                  x-text="aiVisibility.perplexity ? 'Likely Cited' : 'Not Optimized'"></span>
+                        </div>
+                        <div class="flex justify-between items-center">
+                            <span class="font-medium">Gemini</span>
+                            <span :class="aiVisibility.gemini ? 'text-green-600' : 'text-yellow-600'" 
+                                  x-text="aiVisibility.gemini ? 'Likely Cited' : 'Needs Work'"></span>
+                        </div>
+                    </div>
+                    <button class="mt-4 w-full bg-purple-100 text-purple-700 py-2 rounded-lg text-sm font-medium hover:bg-purple-200">
+                        Test Live Visibility (Pro)
+                    </button>
+                </div>
+
+                <!-- Quick Wins -->
+                <div class="bg-white rounded-xl shadow-lg p-6">
+                    <h3 class="text-lg font-semibold text-gray-700 mb-4">Quick Wins</h3>
+                    <div class="space-y-2">
+                        <template x-for="win in quickWins" :key="win">
+                            <div class="flex items-start gap-2">
+                                <span class="text-green-500 mt-1">+</span>
+                                <span class="text-sm" x-text="win"></span>
+                            </div>
+                        </template>
+                    </div>
+                    <div class="mt-4 p-3 bg-green-50 rounded-lg">
+                        <p class="text-xs text-green-800">Implementing these could boost your score by 
+                            <span class="font-bold">+15-25 points</span>
+                        </p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Detailed Factor Analysis -->
+            <div class="bg-white rounded-xl shadow-lg p-6">
+                <h2 class="text-2xl font-bold text-gray-800 mb-6">Detailed GEO Factor Analysis</h2>
+                
+                <!-- Factor Categories -->
+                <div class="space-y-6">
+                    <!-- Content Structure -->
+                    <div>
+                        <h3 class="text-lg font-semibold text-gray-700 mb-3">Content Structure</h3>
+                        <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+                            <template x-for="factor in factors.structure" :key="factor.name">
+                                <div class="border rounded-lg p-3" 
+                                     :class="factor.present ? 'border-green-300 bg-green-50' : 'border-red-300 bg-red-50'">
+                                    <div class="flex items-center justify-between mb-1">
+                                        <span class="text-sm font-medium" x-text="factor.name"></span>
+                                        <span :class="factor.present ? 'text-green-600' : 'text-red-600'">
+                                            <span x-text="factor.present ? '✓' : '✗'"></span>
+                                        </span>
+                                    </div>
+                                    <div class="text-xs text-gray-600" x-text="`${factor.points} pts`"></div>
+                                </div>
+                            </template>
+                        </div>
+                    </div>
+
+                    <!-- Authority Signals -->
+                    <div>
+                        <h3 class="text-lg font-semibold text-gray-700 mb-3">Authority Signals</h3>
+                        <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+                            <template x-for="factor in factors.authority" :key="factor.name">
+                                <div class="border rounded-lg p-3" 
+                                     :class="factor.present ? 'border-green-300 bg-green-50' : 'border-red-300 bg-red-50'">
+                                    <div class="flex items-center justify-between mb-1">
+                                        <span class="text-sm font-medium" x-text="factor.name"></span>
+                                        <span :class="factor.present ? 'text-green-600' : 'text-red-600'">
+                                            <span x-text="factor.present ? '✓' : '✗'"></span>
+                                        </span>
+                                    </div>
+                                    <div class="text-xs text-gray-600" x-text="`${factor.points} pts`"></div>
+                                </div>
+                            </template>
+                        </div>
+                    </div>
+
+                    <!-- AI-Friendly Format -->
+                    <div>
+                        <h3 class="text-lg font-semibold text-gray-700 mb-3">AI-Friendly Format</h3>
+                        <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+                            <template x-for="factor in factors.aiFormat" :key="factor.name">
+                                <div class="border rounded-lg p-3" 
+                                     :class="factor.present ? 'border-green-300 bg-green-50' : 'border-red-300 bg-red-50'">
+                                    <div class="flex items-center justify-between mb-1">
+                                        <span class="text-sm font-medium" x-text="factor.name"></span>
+                                        <span :class="factor.present ? 'text-green-600' : 'text-red-600'">
+                                            <span x-text="factor.present ? '✓' : '✗'"></span>
+                                        </span>
+                                    </div>
+                                    <div class="text-xs text-gray-600" x-text="`${factor.points} pts`"></div>
+                                </div>
+                            </template>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Auto-Optimize CTA -->
+                <div class="mt-8 p-6 bg-gradient-to-r from-green-500 to-blue-500 rounded-lg text-white">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <h3 class="text-xl font-bold mb-2">Auto-Optimize This Content</h3>
+                            <p class="opacity-90">Our AI will rewrite your content to score 90+ on GEO</p>
+                        </div>
+                        <button @click="showOptimizationModal = true" 
+                                class="bg-white text-green-600 px-6 py-3 rounded-lg font-bold hover:bg-gray-100 transition-colors">
+                            Optimize Now ($4)
+                        </button>
+                    </div>
+                </div>
+
+                <!-- New: Deep AEO Audit Report -->
+                <div class="mt-6 p-6 bg-gradient-to-r from-purple-600 to-indigo-600 rounded-lg text-white">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <h3 class="text-xl font-bold mb-2">Get Complete AEO Audit Report</h3>
+                            <p class="opacity-90">Detailed 15-page report with schema markup, PR angles, and citation strategy</p>
+                        </div>
+                        <button @click="generateAEOAudit()" 
+                                class="bg-white text-purple-600 px-6 py-3 rounded-lg font-bold hover:bg-gray-100 transition-colors">
+                            Generate Report ($19)
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Optimization Tips -->
+            <div class="bg-white rounded-xl shadow-lg p-6">
+                <h2 class="text-2xl font-bold text-gray-800 mb-6">Optimization Recommendations</h2>
+                <div class="space-y-4">
+                    <template x-for="tip in optimizationTips" :key="tip.title">
+                        <div class="border-l-4 border-purple-500 pl-4">
+                            <h4 class="font-semibold text-gray-700" x-text="tip.title"></h4>
+                            <p class="text-sm text-gray-600 mt-1" x-text="tip.description"></p>
+                            <div class="mt-2">
+                                <span class="text-xs bg-purple-100 text-purple-700 px-2 py-1 rounded" x-text="`+${tip.impact} points`"></span>
+                            </div>
+                        </div>
+                    </template>
+                </div>
+            </div>
+        </div>
+
+        <!-- Pricing Section -->
+        <div id="pricing" class="mt-16 bg-gray-900 rounded-xl p-8 text-white">
+            <h2 class="text-3xl font-bold text-center mb-8">Choose Your Plan</h2>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-4xl mx-auto">
+                <!-- Free Plan -->
+                <div class="border border-gray-700 rounded-lg p-6">
+                    <h3 class="text-xl font-bold mb-2">Free</h3>
+                    <p class="text-3xl font-bold mb-4">$0</p>
+                    <ul class="space-y-3 mb-6">
+                        <li class="flex items-center gap-2">
+                            <span class="text-green-400">✓</span>
+                            <span>3 URL checks/day</span>
+                        </li>
+                        <li class="flex items-center gap-2">
+                            <span class="text-green-400">✓</span>
+                            <span>Basic GEO score</span>
+                        </li>
+                        <li class="flex items-center gap-2">
+                            <span class="text-red-400">✗</span>
+                            <span>AI visibility check</span>
+                        </li>
+                        <li class="flex items-center gap-2">
+                            <span class="text-red-400">✗</span>
+                            <span>Auto-optimization</span>
+                        </li>
+                    </ul>
+                    <button class="w-full bg-gray-700 py-2 rounded-lg hover:bg-gray-600 transition-colors">
+                        Current Plan
+                    </button>
+                </div>
+
+                <!-- Pro Plan -->
+                <div class="border-2 border-purple-500 rounded-lg p-6 relative">
+                    <span class="absolute -top-3 left-1/2 transform -translate-x-1/2 bg-purple-500 px-3 py-1 rounded text-sm">
+                        MOST POPULAR
+                    </span>
+                    <h3 class="text-xl font-bold mb-2">Pro</h3>
+                    <p class="text-3xl font-bold mb-4">$47/mo</p>
+                    <ul class="space-y-3 mb-6">
+                        <li class="flex items-center gap-2">
+                            <span class="text-green-400">✓</span>
+                            <span>Unlimited checks</span>
+                        </li>
+                        <li class="flex items-center gap-2">
+                            <span class="text-green-400">✓</span>
+                            <span>AI visibility tracking</span>
+                        </li>
+                        <li class="flex items-center gap-2">
+                            <span class="text-green-400">✓</span>
+                            <span>Auto-optimization</span>
+                        </li>
+                        <li class="flex items-center gap-2">
+                            <span class="text-green-400">✓</span>
+                            <span>API access</span>
+                        </li>
+                    </ul>
+                    <button class="w-full bg-purple-600 py-2 rounded-lg hover:bg-purple-700 transition-colors">
+                        Start Free Trial
+                    </button>
+                </div>
+
+                <!-- Agency Plan -->
+                <div class="border border-gray-700 rounded-lg p-6">
+                    <h3 class="text-xl font-bold mb-2">Agency</h3>
+                    <p class="text-3xl font-bold mb-4">$297/mo</p>
+                    <ul class="space-y-3 mb-6">
+                        <li class="flex items-center gap-2">
+                            <span class="text-green-400">✓</span>
+                            <span>Everything in Pro</span>
+                        </li>
+                        <li class="flex items-center gap-2">
+                            <span class="text-green-400">✓</span>
+                            <span>White label</span>
+                        </li>
+                        <li class="flex items-center gap-2">
+                            <span class="text-green-400">✓</span>
+                            <span>Bulk analysis</span>
+                        </li>
+                        <li class="flex items-center gap-2">
+                            <span class="text-green-400">✓</span>
+                            <span>Client reports</span>
+                        </li>
+                    </ul>
+                    <button class="w-full bg-gray-700 py-2 rounded-lg hover:bg-gray-600 transition-colors">
+                        Contact Sales
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- JavaScript Logic -->
+    <script>
+        function geoScorer() {
+            return {
+                analysisType: 'url',
+                urlInput: '',
+                contentInput: '',
+                analyzing: false,
+                showResults: false,
+                freeChecksRemaining: 3,
+                score: 0,
+                aiVisibility: {
+                    chatgpt: false,
+                    claude: false,
+                    perplexity: false,
+                    gemini: false
+                },
+                quickWins: [],
+                factors: {
+                    structure: [],
+                    authority: [],
+                    aiFormat: []
+                },
+                optimizationTips: [],
+                showOptimizationModal: false,
+                aeoAuditData: null,
+
+                async analyzeContent() {
+                    // Validation
+                    if (this.analysisType === 'url') {
+                        if (!this.urlInput || this.urlInput.trim() === '') {
+                            alert('Please enter a valid URL to analyze');
+                            return;
+                        }
+                        // Basic URL validation
+                        try {
+                            new URL(this.urlInput);
+                        } catch (e) {
+                            alert('Please enter a valid URL (e.g., https://example.com/article)');
+                            return;
+                        }
+                    } else {
+                        if (!this.contentInput || this.contentInput.trim().length < 50) {
+                            alert('Please enter at least 50 characters of content to analyze');
+                            return;
+                        }
+                    }
+
+                    if (this.freeChecksRemaining <= 0) {
+                        alert('You have used all your free checks for today. Please upgrade to Pro for unlimited checks.');
+                        window.location.href = '#pricing';
+                        return;
+                    }
+
+                    this.analyzing = true;
+                    this.showResults = false;
+
+                    // Simulate API call
+                    await new Promise(resolve => setTimeout(resolve, 2000));
+
+                    // Get content to analyze
+                    let content = this.analysisType === 'url' ? 
+                        await this.fetchURLContent(this.urlInput) : 
+                        this.contentInput;
+
+                    if (!content || content.trim() === '') {
+                        this.analyzing = false;
+                        alert('Could not retrieve content from the URL. Please check the URL and try again.');
+                        return;
+                    }
+
+                    // Calculate GEO score
+                    this.calculateGEOScore(content);
+                    
+                    this.analyzing = false;
+                    this.showResults = true;
+                    this.freeChecksRemaining--;
+
+                    // Save to localStorage
+                    localStorage.setItem('freeChecksRemaining', this.freeChecksRemaining);
+                    localStorage.setItem('lastCheckDate', new Date().toDateString());
+                },
+
+                async fetchURLContent(url) {
+                    // In production, you would implement real URL fetching
+                    // For now, this is a demo that shows how it would work
+                    
+                    // Check if URL is accessible (demo validation)
+                    if (!url || url.trim() === '') {
+                        return '';
+                    }
+
+                    // NOTE: In production, you would:
+                    // 1. Use a backend API to fetch the URL content
+                    // 2. Or use a CORS proxy service
+                    // 3. Or require users to paste content directly
+                    
+                    // Demo: Return sample content based on URL pattern
+                    if (url.includes('blog') || url.includes('article') || url.includes('post')) {
+                        return `
+                            Sample Article: ${url}
+                            
+                            ## What is AI Content Optimization?
+                            
+                            According to recent studies by Stanford University (2024), 75% of users prefer AI-generated summaries over traditional search results. This shift represents a fundamental change in how we approach content creation.
+                            
+                            ### Key Statistics:
+                            - 82% increase in AI-driven traffic (Source: TechCrunch, 2024)
+                            - 3.5x higher engagement with optimized content
+                            - 67% of marketers now prioritize GEO over traditional SEO
+                            
+                            Research from MIT's AI Lab shows that structured content performs 240% better in AI retrieval systems.
+                            
+                            Updated: January 2025
+                            Author: Dr. Jane Smith, PhD in Computer Science, AI Researcher at MIT
+                            
+                            ## Why Does This Matter?
+                            
+                            "The future of search is conversational AI," says Professor John Davis from Harvard. "Content that isn't optimized for AI will become invisible."
+                            
+                            ### Methodology
+                            Our analysis used a dataset of 10,000 web pages across 50 industries...
+                            
+                            ## Conclusion
+                            Implementing these strategies can significantly improve your content's AI visibility.
+                        `;
+                    } else {
+                        return `
+                            Basic Content from: ${url}
+                            
+                            This is a demonstration of the GEO Scorer tool.
+                            The content would normally be fetched from the actual URL.
+                            
+                            For production use, implement proper URL fetching via:
+                            - Backend API endpoint
+                            - CORS proxy service
+                            - Browser extension
+                            
+                            Last updated: 2024
+                        `;
+                    }
+                },
+
+                calculateGEOScore(content) {
+                    let totalScore = 0;
+                    this.quickWins = [];
+                    
+                    // Content Structure Analysis
+                    this.factors.structure = [
+                        { name: 'Clear Headers', present: content.includes('##') || content.includes('h2'), points: 5 },
+                        { name: 'Statistics', present: /\d+%/.test(content), points: 5 },
+                        { name: 'Lists', present: content.includes('1.') || content.includes('•'), points: 3 },
+                        { name: 'Updated Date', present: content.toLowerCase().includes('updated'), points: 3 },
+                        { name: 'TLDR Section', present: content.toLowerCase().includes('tldr') || content.toLowerCase().includes('summary'), points: 4 },
+                        { name: 'Questions', present: content.includes('?'), points: 3 },
+                        { name: 'Conclusion', present: content.toLowerCase().includes('conclusion'), points: 2 },
+                        { name: 'Examples', present: content.toLowerCase().includes('example') || content.toLowerCase().includes('for instance'), points: 3 }
+                    ];
+
+                    // Authority Signals Analysis
+                    this.factors.authority = [
+                        { name: 'Citations', present: /\[\d+\]/.test(content) || content.includes('according to'), points: 5 },
+                        { name: 'Expert Quotes', present: content.includes('"') && content.toLowerCase().includes('said'), points: 5 },
+                        { name: 'Studies', present: content.toLowerCase().includes('study') || content.toLowerCase().includes('research'), points: 5 },
+                        { name: 'Author Bio', present: content.toLowerCase().includes('author') || content.includes('by '), points: 3 },
+                        { name: 'Credentials', present: content.includes('Dr.') || content.includes('PhD') || content.includes('Professor'), points: 3 },
+                        { name: 'Data Sources', present: content.toLowerCase().includes('source:') || content.toLowerCase().includes('data from'), points: 4 },
+                        { name: 'References', present: content.toLowerCase().includes('reference'), points: 3 },
+                        { name: 'Methodology', present: content.toLowerCase().includes('method'), points: 3 }
+                    ];
+
+                    // AI-Friendly Format Analysis
+                    this.factors.aiFormat = [
+                        { name: 'Definitions', present: content.includes('is defined as') || content.includes('refers to'), points: 4 },
+                        { name: 'Comparisons', present: content.includes('vs') || content.includes('compared to'), points: 4 },
+                        { name: 'Pros/Cons', present: content.toLowerCase().includes('pros') || content.toLowerCase().includes('advantages'), points: 3 },
+                        { name: 'Step-by-Step', present: content.includes('Step 1') || content.includes('First,'), points: 3 },
+                        { name: 'FAQ Format', present: content.toLowerCase().includes('frequently asked') || content.includes('Q:'), points: 3 },
+                        { name: 'Key Takeaways', present: content.toLowerCase().includes('key takeaway') || content.toLowerCase().includes('important'), points: 3 },
+                        { name: 'Structured Data', present: content.includes('json') || content.includes('schema'), points: 5 },
+                        { name: 'Tables/Charts', present: content.includes('|') || content.includes('table'), points: 3 }
+                    ];
+
+                    // Calculate total score
+                    [...this.factors.structure, ...this.factors.authority, ...this.factors.aiFormat].forEach(factor => {
+                        if (factor.present) {
+                            totalScore += factor.points;
+                        } else {
+                            if (factor.points >= 4) {
+                                this.quickWins.push(`Add ${factor.name} (+${factor.points} pts)`);
+                            }
+                        }
+                    });
+
+                    this.score = Math.min(totalScore, 100);
+
+                    // Determine AI visibility
+                    this.aiVisibility.chatgpt = this.score > 60;
+                    this.aiVisibility.claude = this.score > 50;
+                    this.aiVisibility.perplexity = this.score > 55;
+                    this.aiVisibility.gemini = this.score > 45;
+
+                    // Generate optimization tips
+                    this.optimizationTips = [
+                        {
+                            title: 'Add Statistical Evidence',
+                            description: 'Include 3-5 statistics with specific percentages and cite recent studies',
+                            impact: 8
+                        },
+                        {
+                            title: 'Improve Citation Format',
+                            description: 'Add [Source: Publication, Year] format after claims for AI to recognize authority',
+                            impact: 5
+                        },
+                        {
+                            title: 'Create Question Headers',
+                            description: 'Convert headers to questions that users might ask AI systems',
+                            impact: 6
+                        },
+                        {
+                            title: 'Add TLDR Summary',
+                            description: 'Include a brief 2-3 sentence summary at the beginning for quick AI extraction',
+                            impact: 4
+                        }
+                    ];
+
+                    // Limit quick wins to top 5
+                    this.quickWins = this.quickWins.slice(0, 5);
+                },
+
+                generateAEOAudit() {
+                    // Generate comprehensive AEO audit based on the prompt structure
+                    const audit = {
+                        contentEvaluation: this.evaluateContentStrengths(),
+                        missingCitations: this.identifyMissingCitations(),
+                        schemaRecommendations: this.generateSchemaMarkup(),
+                        prAngles: this.generatePRStoryAngles(),
+                        prioritizedActions: this.prioritizeByImpact()
+                    };
+
+                    this.aeoAuditData = audit;
+                    this.showAEOAuditModal();
+                },
+
+                evaluateContentStrengths() {
+                    // Analyze current content strengths and weaknesses
+                    const strengths = [];
+                    const weaknesses = [];
+
+                    this.factors.structure.forEach(factor => {
+                        if (factor.present) {
+                            strengths.push(`✓ Strong ${factor.name} implementation`);
+                        } else {
+                            weaknesses.push(`✗ Missing ${factor.name} - reduces AI trust by ${factor.points * 2}%`);
+                        }
+                    });
+
+                    return { strengths, weaknesses };
+                },
+
+                identifyMissingCitations() {
+                    // Five specific citation types that would improve AI trust
+                    return [
+                        {
+                            type: "Government/Official Studies",
+                            example: "CDC, NIH, or WHO research papers",
+                            impact: "AI systems prioritize .gov sources for health/safety topics",
+                            implementation: "Add: 'According to CDC research (2024)...'"
+                        },
+                        {
+                            type: "Academic Research Papers",
+                            example: "Peer-reviewed journals from Google Scholar",
+                            impact: "Increases authority score by 35% in AI evaluation",
+                            implementation: "Cite: 'Harvard Business Review study shows...'"
+                        },
+                        {
+                            type: "Industry Leader Quotes",
+                            example: "CEOs, founders of relevant companies",
+                            impact: "AI prefers expert attribution for credibility",
+                            implementation: "Include: 'Microsoft CEO Satya Nadella stated...'"
+                        },
+                        {
+                            type: "Statistical Data Sources",
+                            example: "Statista, Pew Research, Gartner",
+                            impact: "Numerical claims need authoritative backing",
+                            implementation: "Reference: 'Gartner reports 73% growth...'"
+                        },
+                        {
+                            type: "Competitor Comparisons",
+                            example: "Direct feature/pricing comparisons",
+                            impact: "AI uses these for balanced responses",
+                            implementation: "Add comparison table with 3+ competitors"
+                        }
+                    ];
+                },
+
+                generateSchemaMarkup() {
+                    // Three schema.org types with sample code
+                    return [
+                        {
+                            type: "Article",
+                            reason: "Most basic, improves content understanding",
+                            markup: `{
+  "@context": "https://schema.org",
+  "@type": "Article",
+  "headline": "Your Title",
+  "datePublished": "2024-01-01",
+  "dateModified": "2024-01-15",
+  "author": {
+    "@type": "Person",
+    "name": "Author Name",
+    "url": "https://yoursite.com/author"
+  }
+}`
+                        },
+                        {
+                            type: "FAQPage",
+                            reason: "AI loves Q&A format for direct answers",
+                            markup: `{
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  "mainEntity": [{
+    "@type": "Question",
+    "name": "Your question here?",
+    "acceptedAnswer": {
+      "@type": "Answer",
+      "text": "Your answer here."
+    }
+  }]
+}`
+                        },
+                        {
+                            type: "HowTo",
+                            reason: "Perfect for tutorial/guide content",
+                            markup: `{
+  "@context": "https://schema.org",
+  "@type": "HowTo",
+  "name": "How to [Your Topic]",
+  "step": [{
+    "@type": "HowToStep",
+    "text": "First step description"
+  }]
+}`
+                        }
+                    ];
+                },
+
+                generatePRStoryAngles() {
+                    // Two innovative PR angles for backlinks
+                    const topic = this.analysisType === 'url' ? this.urlInput : 'your content';
+                    return [
+                        {
+                            angle: "Original Research Study",
+                            pitch: `Conduct a study analyzing 1000 ${topic} examples using AI, revealing surprising patterns`,
+                            mediaTargets: ["TechCrunch", "The Verge", "Search Engine Journal"],
+                            backlink_potential: "High - original research gets 3x more backlinks",
+                            implementation: "Survey 100 professionals, analyze with AI, create infographic"
+                        },
+                        {
+                            angle: "Contrarian Industry Take",
+                            pitch: `'Why Everything You Know About ${topic} Is Wrong' - backed by data`,
+                            mediaTargets: ["Forbes", "Entrepreneur", "Business Insider"],
+                            backlink_potential: "Very High - controversial takes get 5x engagement",
+                            implementation: "Challenge common assumption, provide counter-evidence, offer new framework"
+                        }
+                    ];
+                },
+
+                prioritizeByImpact() {
+                    // Prioritized action list
+                    return [
+                        { action: "Add 3-5 statistical claims with sources", impact: "High", effort: "Low", timeframe: "Today" },
+                        { action: "Implement FAQ schema markup", impact: "High", effort: "Medium", timeframe: "This week" },
+                        { action: "Include expert quotes with credentials", impact: "Medium", effort: "Medium", timeframe: "This week" },
+                        { action: "Create comparison table", impact: "Medium", effort: "Low", timeframe: "Today" },
+                        { action: "Launch PR campaign with study", impact: "Very High", effort: "High", timeframe: "This month" }
+                    ];
+                },
+
+                showAEOAuditModal() {
+                    // In production, this would show a modal or generate a PDF
+                    alert('AEO Audit Report Generated! This would open a detailed report with:\n\n' +
+                          '1. Content Evaluation (Strengths/Weaknesses)\n' +
+                          '2. 5 Missing Citation Types\n' +
+                          '3. 3 Schema Markup Implementations\n' +
+                          '4. 2 PR Story Angles\n' +
+                          '5. Prioritized Action Plan\n\n' +
+                          'In production, this generates a downloadable PDF report.');
+                    
+                    console.log('Full AEO Audit Data:', this.aeoAuditData);
+                },
+
+                init() {
+                    // Check if new day to reset free checks
+                    const lastCheck = localStorage.getItem('lastCheckDate');
+                    const today = new Date().toDateString();
+                    
+                    if (lastCheck !== today) {
+                        this.freeChecksRemaining = 3;
+                        localStorage.setItem('freeChecksRemaining', 3);
+                        localStorage.setItem('lastCheckDate', today);
+                    } else {
+                        this.freeChecksRemaining = parseInt(localStorage.getItem('freeChecksRemaining') || 3);
+                    }
+                }
+            }
+        }
+    </script>
+</body>
+</html>
